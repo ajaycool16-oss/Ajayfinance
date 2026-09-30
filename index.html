@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a" id="meta-theme-color">
+  <title>Family Financial War-Room</title>
+
+  <!-- External Libraries -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      /* Default: Midnight Blue */
+      --bg: #0f172a; --surface: #1e293b; --surface-hover: #334155;
+      --border: #334155; --border-light: #475569;
+      --text: #f8fafc; --text-muted: #94a3b8;
+      --primary: #3b82f6; --primary-hover: #2563eb;
+      --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+      --font: system-ui, -apple-system, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
+    body { background: var(--bg); color: var(--text); line-height: 1.5; font-size: 14px; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+    /* Screens */
+    #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; background: var(--bg); padding: 20px;}
+    
+    /* Typography & Utilities */
+    h1, h2, h3, h4 { color: var(--text); margin-bottom: 10px; }
+    .text-primary { color: var(--primary); }
+    .text-success { color: var(--success); }
+    .text-warning { color: var(--warning); }
+    .text-danger { color: var(--danger); }
+    .text-muted { color: var(--text-muted); }
+    .hidden { display: none !important; }
+
+    /* Components */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 20px; transition: background 0.3s, border 0.3s; }
+    .btn { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn:hover { background: var(--primary-hover); }
+    .btn-outline { background: transparent; border: 1px solid var(--border-light); color: var(--text); }
+    .btn-outline:hover { background: var(--surface-hover); }
+    .btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+    .btn-success { background: var(--success); color: white; border: none; }
+
+    /* Layout Grids */
+    .grid-1 { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+
+    /* Forms */
+    label { font-size: 12px; font-weight: 600; margin-bottom: 6px; display: block; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    input, select { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px; font-size: 14px; outline: none; transition: 0.2s; margin-bottom: 12px; }
+    input:focus, select:focus { border-color: var(--primary); }
+    .form-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .form-row > div { flex: 1; min-width: 150px; }
+    input[type="range"] { width: 100%; margin: 10px 0; accent-color: var(--primary); }
+
+    /* Metrics */
+    .metric-value { font-size: 28px; font-weight: 700; margin: 4px 0; }
+    .metric-label { font-size: 13px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; }
+
+    /* Header */
+    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; gap: 10px;}
+    
+    #data-vault { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; flex-direction: column; }
+    .vault-header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--surface); }
+    .vault-body { display: flex; flex: 1; overflow: hidden; flex-direction: column; }
+    @media (min-width: 768px) { .vault-body { flex-direction: row; } }
+    
+    .vault-sidebar { width: 100%; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; overflow-x: auto; flex-shrink: 0; }
+    @media (min-width: 768px) { .vault-sidebar { width: 220px; border-right: 1px solid var(--border); border-bottom: none; flex-direction: column; overflow-y: auto; } }
+    
+    .vault-tab { padding: 16px 20px; color: var(--text-muted); font-weight: 600; cursor: pointer; border-bottom: 1px solid var(--border); text-align: left; background: none; border-left: 3px solid transparent; border-top: none; border-right: none; font-size: 14px; white-space: nowrap; }
+    .vault-tab:hover { background: var(--bg); color: var(--text); }
+    .vault-tab.active { color: var(--primary); border-left-color: var(--primary); background: rgba(59, 130, 246, 0.05); }
+    
+    .vault-content { flex: 1; overflow-y: auto; padding: 20px; background: var(--bg); }
+    @media (min-width: 768px) { .vault-content { padding: 30px; } }
+    .tab-pane { display: none; max-width: 1000px; margin: 0 auto; }
+    .tab-pane.active { display: block; }
+
+    /* Dynamic Lists */
+    .list-item { background: var(--surface); border: 1px solid var(--border); padding: 16px; border-radius: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;}
+    .list-item-details h4 { margin-bottom: 4px; font-size: 15px; display:flex; align-items:center; gap:8px;}
+    .list-item-details p { font-size: 12px; color: var(--text-muted); margin-bottom: 2px; }
+    .badge-owner { font-size: 10px; background: var(--bg); border:1px solid var(--border-light); padding:2px 6px; border-radius:4px; color: var(--primary); font-weight:bold;}
+    .doc-link { color: var(--primary); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 6px; background: rgba(59, 130, 246, 0.1); border-radius: 4px; margin-left: 8px;}
+    .doc-link:hover { background: rgba(59, 130, 246, 0.2); }
+
+    /* AI Section & Chat */
+    .ai-box { background: linear-gradient(145deg, var(--surface), var(--bg)); border: 1px solid var(--primary); border-radius: 12px; padding: 24px; position: relative; overflow: hidden; margin-bottom: 30px; }
+    .ai-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--primary), #8b5cf6); }
+    .ai-content { font-size: 14px; line-height: 1.7; color: var(--text); white-space: pre-wrap; margin-top: 16px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid var(--border-light); max-height: 400px; overflow-y: auto;}
+    .ai-content h3 { margin-top: 16px; margin-bottom: 8px; color: var(--primary); }
+    .chat-bubble-user { background: rgba(59, 130, 246, 0.1); border-right: 3px solid var(--primary); padding: 10px; margin: 10px 0; border-radius: 6px; text-align: right;}
+    .chat-bubble-ai { padding: 10px 0; border-bottom: 1px solid var(--border-light); margin-bottom: 10px; }
+    
+    .loader { border: 3px solid var(--border); border-top: 3px solid var(--primary); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    #session-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+    #msg-box { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 12px 24px; border-radius: 8px; z-index: 10000; box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: none; }
+    .mc-result { display: inline-block; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 14px; margin-left: 10px; }
+  </style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="card" style="width: 100%; max-width: 400px; padding: 40px 20px; border-color: var(--primary);">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" style="margin-bottom: 16px;">
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+    </svg>
+    <h1 style="font-size: 24px;">Family Wealth Planner</h1>
+    <p class="text-muted" style="margin-bottom: 30px; font-size: 13px;">Secure, dual-profile financial projection engine.</p>
+    <button class="btn" style="width: 100%; font-size: 16px; padding: 14px;" onclick="authenticate()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="margin-right:8px;"><path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/></svg>
+      Sign in with Google
+    </button>
+    <div id="auth-status" class="text-muted" style="margin-top: 16px; font-size: 12px;"></div>
+  </div>
+</div>
+
+<div id="app-screen" class="hidden">
+  <div class="container">
+    <header>
+      <div>
+        <h1 style="margin: 0; font-size: 24px; display: flex; align-items: center; gap: 10px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          Financial War-Room
+        </h1>
+        <p class="text-muted" style="margin:0; font-size: 13px;">Secure Google Drive Sync Active • Cloud Data Overwrites In-Place (No Duplicates)</p>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <button class="btn btn-outline" onclick="openVault()">⚙️ Data Vault</button>
+        <button class="btn btn-outline" style="border-color: var(--danger); color: var(--danger);" onclick="forceLogout()">Log Out</button>
+      </div>
+    </header>
+
+    <!-- Top Metrics -->
+    <div class="grid-4" style="margin-bottom: 24px;">
+      <div class="card" style="margin-bottom: 0;">
+        <div class="metric-label">Family Net Worth</div>
+        <div class="metric-value text-primary" id="dash-nw">₹0</div>
+        <div class="text-muted" style="font-size: 12px;">Total Assets minus Liabilities</div>
+      </div>
+      <div class="card" style="margin-bottom: 0;">
+        <div class="metric-label">Liquid Assets + Inv.</div>
+        <div class="metric-value" id="dash-liquid">₹0</div>
+        <div class="text-muted" style="font-size: 12px;">Ready capital & Markets</div>
+      </div>
+      <div class="card" style="margin-bottom: 0;">
+        <div class="metric-label">Total Liabilities</div>
+        <div class="metric-value" style="color: var(--warning);" id="dash-debt">₹0</div>
+        <div class="text-muted" style="font-size: 12px;">Outstanding Loans & EMIs</div>
+      </div>
+      <div class="card" style="margin-bottom: 0;">
+        <div class="metric-label">Household FIRE Target</div>
+        <div class="metric-value text-success" id="dash-fire">₹0</div>
+        <div class="text-muted" style="font-size: 11px;">Math: (Desired Monthly Exp × 12) × 25 yrs</div>
+      </div>
+    </div>
+
+    <!-- ADVANCED CHARTS: PROJECTION & HISTORICAL -->
+    <div class="grid-2" style="margin-bottom: 24px;">
+        <div class="card" style="border-color: var(--primary); margin-bottom: 0;">
+          <h3 style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <span>Interactive Wealth Projection</span>
+            <button class="btn btn-outline" style="font-size: 12px; background: rgba(59, 130, 246, 0.1);" onclick="runMonteCarlo()">🎲 Run Monte Carlo</button>
+          </h3>
+          
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+            <div style="flex: 1; min-width: 150px;">
+              <label>Extra Monthly SIP (<span id="sim-sip-val" class="text-primary">₹0</span>)</label>
+              <input type="range" id="sim-sip" min="0" max="200000" step="5000" value="0" oninput="updateSimulation()">
+            </div>
+            <div style="flex: 1; min-width: 150px;">
+              <label>Equity Return (<span id="sim-cagr-val" class="text-primary">Default</span>)</label>
+              <input type="range" id="sim-cagr" min="5" max="20" step="0.5" value="0" oninput="updateSimulation()">
+            </div>
+            <div style="flex: 1; min-width: 150px;">
+              <label>Years to Retire (<span id="sim-yrs-val" class="text-primary">Default</span>)</label>
+              <input type="range" id="sim-yrs" min="1" max="40" step="1" value="0" oninput="updateSimulation()">
+            </div>
+          </div>
+
+          <div id="mc-output" class="hidden" style="margin-bottom: 16px; padding: 12px; background: var(--bg); border: 1px solid var(--border-light); border-radius: 8px;"></div>
+          <div style="position: relative; height: 250px; width: 100%;"><canvas id="wealthChart"></canvas></div>
+        </div>
+
+        <div class="card" style="margin-bottom: 0;">
+            <h3>Historical Progress (Net Worth)</h3>
+            <p class="text-muted" style="font-size: 12px; margin-bottom: 16px;">Automated monthly snapshots of your wealth building journey.</p>
+            <div style="position: relative; height: 320px; width: 100%;"><canvas id="historyChart"></canvas></div>
+        </div>
+    </div>
+
+    <!-- ACTIONABLE INSIGHTS & TOOLS -->
+    <div class="grid-2" style="margin-bottom: 24px;">
+      
+      <div class="grid-1">
+        <!-- Emergency Fund -->
+        <div class="card" style="margin-bottom: 0;">
+          <h3>Emergency Fund Check</h3>
+          <p class="text-muted" style="font-size: 11px; margin-bottom: 10px;" id="em-formula">Math: (Living + Rent + EMIs + Kids Fees) × 6 Months</p>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div><p class="metric-label">Recommended</p><h4 id="dash-em-req" style="font-size: 18px;">₹0</h4></div>
+            <div style="text-align: right;"><p class="metric-label">Actual Liquid Cash</p><h4 id="dash-em-actual" class="text-success" style="font-size: 18px;">₹0</h4></div>
+          </div>
+          <div id="em-status" style="margin-top: 12px; font-size: 12px; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.05);"></div>
+        </div>
+        
+        <!-- FIRE Override -->
+        <div class="card" style="margin-bottom: 0;">
+          <h3>FIRE Target Override</h3>
+          <p class="text-muted" style="font-size: 12px; margin-bottom: 12px;">Adjust your desired monthly income in retirement (in today's rupees). The chart will auto-update.</p>
+          <div class="form-row">
+            <div>
+              <label>Desired Monthly Income (₹)</label>
+              <input type="number" id="dash-fire-override" placeholder="Leave blank to use base expenses" oninput="updateDashboard()">
+            </div>
+          </div>
+        </div>
+
+        <!-- Debt Avalanche Visualizer -->
+        <div class="card" style="margin-bottom: 0; border-left: 4px solid var(--danger);">
+          <h3>Debt Snowball Visualizer</h3>
+          <p class="text-muted" style="font-size: 12px; margin-bottom: 12px;">See the impact of extra EMI payments on your total liabilities (Assumes ~9% avg interest).</p>
+          <label>Extra Monthly Payment Towards Loans (₹ <span id="debt-extra-val" class="text-primary">0</span>)</label>
+          <input type="range" id="debt-extra" min="0" max="100000" step="1000" value="0" oninput="updateDebtVisualizer()">
+          <div id="debt-result" style="margin-top: 12px; font-size: 13px; padding: 10px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; color: var(--text);"></div>
+        </div>
+      </div>
+
+      <div class="grid-1">
+        <!-- Safe Withdrawal Sandbox -->
+        <div class="card" style="margin-bottom: 0;">
+          <h3>Die With Zero: Drawdown Sandbox</h3>
+          <p class="text-muted" style="font-size: 12px; margin-bottom: 12px;">If you retired today with your Liquid Corpus, how long would it last?</p>
+          <div class="form-row">
+            <div><label>Monthly Withdrawal (₹)</label><input type="number" id="dd-withdraw" value="100000" oninput="runDrawdown()"></div>
+            <div><label>Inflation (%)</label><input type="number" id="dd-inf" value="7" step="0.5" oninput="runDrawdown()"></div>
+            <div><label>Corpus Growth (%)</label><input type="number" id="dd-growth" value="9" step="0.5" oninput="runDrawdown()"></div>
+          </div>
+          <div style="background: rgba(16, 185, 129, 0.1); padding: 10px; border-radius: 8px; margin-top: 10px;">
+            <span class="metric-label">Corpus Depletion Time:</span>
+            <h4 id="dd-result" class="text-success" style="margin: 0; font-size: 20px;">0 Years</h4>
+          </div>
+        </div>
+        
+        <!-- Tax & Compliance Calendar -->
+        <div class="card" style="margin-bottom: 0; border-left: 4px solid var(--primary);">
+          <h3>Indian Compliance Calendar</h3>
+          <p class="text-muted" style="font-size: 12px; margin-bottom: 8px;">Automated alerts based on the current month.</p>
+          <div id="compliance-alert" style="font-size: 13px; font-weight: bold; color: var(--text); background: var(--surface-hover); padding: 10px; border-radius: 6px;"></div>
+        </div>
+
+        <!-- Tax-Loss Harvesting Alerts -->
+        <div class="card" style="margin-bottom: 0; border-left: 4px solid var(--warning);">
+          <h3>Tax-Loss Harvesting Alert</h3>
+          <p class="text-muted" style="font-size: 12px; margin-bottom: 12px;">Scans portfolio for STCG (20%) or LTCG (12.5%) loss offsets.</p>
+          <div id="tax-harvest-status" style="font-size: 13px; max-height: 100px; overflow-y: auto;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Advisor (Modular Prompts & Chat) -->
+    <div class="ai-box">
+      <div style="margin-bottom: 16px;">
+        <h2 style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
+          Conversational AI Architect
+        </h2>
+        <p class="text-muted" style="font-size: 13px;">Targeted queries prevent AI "Heuristic Collapse". Start a topic, then chat below.</p>
+      </div>
+      
+      <div class="grid-4" style="margin-bottom: 16px;">
+        <button class="btn btn-outline" style="border-color: #8b5cf6; color: var(--text);" onclick="startAIChat('liquidity')">💧 Liquidity & Emergencies</button>
+        <button class="btn btn-outline" style="border-color: #8b5cf6; color: var(--text);" onclick="startAIChat('insurance')">🛡️ Insurance Audit</button>
+        <button class="btn btn-outline" style="border-color: #8b5cf6; color: var(--text);" onclick="startAIChat('asset_allocation')">⚖️ Asset Allocation</button>
+        <button class="btn btn-outline" style="border-color: #8b5cf6; color: var(--text);" onclick="startAIChat('tax')">📉 Tax Strategy</button>
+      </div>
+
+      <div id="ai-output" class="ai-content hidden"></div>
+      
+      <div id="ai-chat-interface" class="hidden" style="margin-top: 16px; display: flex; gap: 10px;">
+        <input type="text" id="ai-chat-input" placeholder="Ask a follow-up question or provide clarification..." style="margin: 0; flex: 1;">
+        <button class="btn btn-purple" style="background: linear-gradient(90deg, #3b82f6, #8b5cf6); color: white;" onclick="sendAIChat()">Send</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DATA VAULT (FULL SCREEN OVERLAY) -->
+<div id="data-vault" class="hidden">
+  <div class="vault-header">
+    <h2 style="margin:0; font-size:18px;">Financial Data Vault</h2>
+    <div style="display: flex; gap: 10px;">
+      <button class="btn btn-outline" onclick="closeVault()">Close</button>
+      <button class="btn" id="btn-save-sync" onclick="saveData()">💾 Save & Sync</button>
+    </div>
+  </div>
+  <div class="vault-body">
+    <!-- Sidebar -->
+    <div class="vault-sidebar">
+      <button class="vault-tab active" onclick="switchTab('tab-family')">👥 Family Profiles</button>
+      <button class="vault-tab" onclick="switchTab('tab-income')">💸 Income & Expenses</button>
+      <button class="vault-tab" onclick="switchTab('tab-liquid')">🏦 Bank & Liquid</button>
+      <button class="vault-tab" onclick="switchTab('tab-invest')">📈 Investments</button>
+      <button class="vault-tab" onclick="switchTab('tab-retire')">👴 Retirement (EPFO/NPS)</button>
+      <button class="vault-tab" onclick="switchTab('tab-assets')">🏠 Real Estate & Gold</button>
+      <button class="vault-tab" onclick="switchTab('tab-loans')">💳 Loans & EMI</button>
+      <button class="vault-tab" onclick="switchTab('tab-insure')">🛡️ Insurance</button>
+      <button class="vault-tab" onclick="switchTab('tab-settings')">⚙️ Settings & Tools</button>
+    </div>
+    
+    <!-- Content Area -->
+    <div class="vault-content">
+      <div style="background: rgba(59, 130, 246, 0.1); padding: 10px 15px; border-radius: 8px; margin-bottom: 20px; font-size: 12px; border-left: 3px solid var(--primary);">
+        ℹ️ <b>Cloud Sync:</b> This tool uses a direct PATCH protocol to your Google Drive. Data is overwritten in-place on a single hidden file. It will never create duplicates or clutter your storage.
+      </div>
+
+      <!-- FAMILY & KIDS -->
+      <div id="tab-family" class="tab-pane active">
+        <h3 class="text-primary">Earning Members</h3>
+        <div class="grid-2">
+          <div class="card" style="border-top: 3px solid var(--primary);">
+            <h4>Member 1 (Self)</h4>
+            <label>Name</label><input type="text" id="m1-name">
+            <div style="display:flex; gap:10px;">
+              <div style="flex:1"><label>Age</label><input type="number" id="m1-age"></div>
+              <div style="flex:1"><label>Gender</label><select id="m1-gender"><option>Male</option><option>Female</option></select></div>
+            </div>
+          </div>
+          <div class="card" style="border-top: 3px solid var(--warning);">
+            <h4>Member 2 (Spouse/Partner)</h4>
+            <label>Name</label><input type="text" id="m2-name">
+            <div style="display:flex; gap:10px;">
+              <div style="flex:1"><label>Age</label><input type="number" id="m2-age"></div>
+              <div style="flex:1"><label>Gender</label><select id="m2-gender"><option>Female</option><option>Male</option></select></div>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="text-primary" style="margin-top:20px;">Children / Dependents</h3>
+        <form class="card form-row" onsubmit="addKid(event)" style="align-items: flex-end;">
+          <div><label>Child Name</label><input type="text" id="k-name" required></div>
+          <div><label>Current Age</label><input type="number" id="k-age" required></div>
+          <div><label>Monthly School Fee (₹)</label><input type="number" id="k-fee" required></div>
+          <button type="submit" id="btn-add-kid" class="btn" style="margin-bottom: 12px; flex: 0 0 auto;">Add Child</button>
+        </form>
+        <div id="list-kids"></div>
+      </div>
+
+      <!-- INCOME & EXPENSES -->
+      <div id="tab-income" class="tab-pane">
+        <h3 class="text-primary">Monthly Cashflow</h3>
+        <div class="card grid-2">
+          <div><label>Member 1: Monthly In-Hand (₹)</label><input type="number" id="inc-m1" value="0"></div>
+          <div><label>Member 2: Monthly In-Hand (₹)</label><input type="number" id="inc-m2" value="0"></div>
+          <div>
+            <label>Base Living Expenses (₹/Month)</label>
+            <p class="text-muted" style="font-size:11px; margin-bottom:6px;">Groceries, utilities, fuel, lifestyle (Exclude EMIs & Rent).</p>
+            <input type="number" id="exp-living" value="0">
+          </div>
+          <div>
+            <label>House Rent Paid (₹/Month)</label>
+            <p class="text-muted" style="font-size:11px; margin-bottom:6px;">Enter 0 if living in self-owned home.</p>
+            <input type="number" id="exp-rent" value="0">
+          </div>
+        </div>
+      </div>
+
+      <!-- BANK & LIQUID -->
+      <div id="tab-liquid" class="tab-pane">
+        <h3 class="text-primary">Bank & Liquid Cash</h3>
+        <div class="grid-2">
+          <div class="card">
+            <h4 style="color:var(--primary); font-size:14px;">Member 1 Accounts</h4>
+            <label>Savings / Salary Account Balances (₹)</label><input type="number" id="liq-bank-m1" value="0">
+            <label>Emergency Fund (FD/Liquid MFs) (₹)</label><input type="number" id="liq-emer-m1" value="0">
+          </div>
+          <div class="card">
+            <h4 style="color:var(--warning); font-size:14px;">Member 2 Accounts</h4>
+            <label>Savings / Salary Account Balances (₹)</label><input type="number" id="liq-bank-m2" value="0">
+            <label>Emergency Fund (FD/Liquid MFs) (₹)</label><input type="number" id="liq-emer-m2" value="0">
+          </div>
+        </div>
+      </div>
+
+      <!-- INVESTMENTS -->
+      <div id="tab-invest" class="tab-pane">
+        <h3 class="text-primary">Market Investments & Tax Harvesting</h3>
+        <form class="card" onsubmit="addInvest(event)">
+          <div class="form-row" style="margin-bottom: 10px;">
+            <div><label>Owner</label><select id="inv-owner"><option>Member 1</option><option>Member 2</option><option>Joint</option></select></div>
+            <div><label>Asset Type</label>
+              <select id="inv-type">
+                <option>Mutual Fund (Equity)</option><option>Direct Stocks</option><option>Debt Fund</option>
+                <option>PPF</option><option>SSY</option><option>LIC</option><option>Fixed Deposit (FD)</option><option>Bonds</option><option>Other</option>
+              </select>
+            </div>
+            <div><label>Name/Scheme</label><input type="text" id="inv-name" required></div>
+          </div>
+          <div class="form-row" style="align-items: flex-end; margin-bottom: 10px;">
+            <div><label>Purchase Date (For Tax)</label><input type="date" id="inv-pdate" required></div>
+            <div><label>Invested Amount (₹)</label><input type="number" id="inv-pval" required></div>
+            <div><label>Current Value (₹)</label><input type="number" id="inv-val" required></div>
+          </div>
+          <div class="form-row" style="align-items: flex-end;">
+            <div>
+              <label>Contribution Freq.</label>
+              <select id="inv-freq"><option>Monthly</option><option>Quarterly</option><option>Half-Yearly</option><option>Yearly</option><option>Lump Sum</option></select>
+            </div>
+            <div><label>Contribution Amt (₹)</label><input type="number" id="inv-sip" value="0"></div>
+            <div><label>Doc Link (Google Drive URL) - Optional</label><input type="url" id="inv-link" placeholder="https://drive.google.com/..."></div>
+            <button type="submit" id="btn-add-inv" class="btn" style="margin-bottom: 12px; flex: 0 0 auto;">Add Investment</button>
+          </div>
+        </form>
+        <div id="list-invest"></div>
+      </div>
+
+      <!-- RETIREMENT -->
+      <div id="tab-retire" class="tab-pane">
+        <h3 class="text-primary">Retirement Accounts (EPFO / NPS)</h3>
+        <div class="grid-2">
+          <div class="card">
+            <h4 style="color:var(--primary); font-size:14px;">Member 1 Accounts</h4>
+            <label>EPFO Total Balance (₹)</label><input type="number" id="ret-epf-val-m1" value="0">
+            <label>EPF Monthly Contrib (Your + Emp) (₹)</label><input type="number" id="ret-epf-sip-m1" value="0">
+            <label>NPS Total Balance (₹)</label><input type="number" id="ret-nps-val-m1" value="0">
+            <label>NPS Monthly SIP (₹)</label><input type="number" id="ret-nps-sip-m1" value="0">
+          </div>
+          <div class="card">
+            <h4 style="color:var(--warning); font-size:14px;">Member 2 Accounts</h4>
+            <label>EPFO Total Balance (₹)</label><input type="number" id="ret-epf-val-m2" value="0">
+            <label>EPF Monthly Contrib (Your + Emp) (₹)</label><input type="number" id="ret-epf-sip-m2" value="0">
+            <label>NPS Total Balance (₹)</label><input type="number" id="ret-nps-val-m2" value="0">
+            <label>NPS Monthly SIP (₹)</label><input type="number" id="ret-nps-sip-m2" value="0">
+          </div>
+        </div>
+      </div>
+
+      <!-- ASSETS -->
+      <div id="tab-assets" class="tab-pane">
+        <h3 class="text-primary">Physical Assets (Real Estate & Gold)</h3>
+        <form class="card form-row" onsubmit="addAsset(event)" style="align-items: flex-end;">
+          <div><label>Owner</label><select id="ast-owner"><option>Joint</option><option>Member 1</option><option>Member 2</option></select></div>
+          <div><label>Type</label><select id="ast-type"><option>Real Estate</option><option>Gold / Jewelry</option></select></div>
+          <div><label>Intended Use</label><select id="ast-use"><option>Self-Occupied / Keep</option><option>Hold to Sell for Wealth</option><option>Rental Income</option><option>Sell for Kids Education</option></select></div>
+          <div><label>Description</label><input type="text" id="ast-name" required></div>
+          <div><label>Current Value (₹)</label><input type="number" id="ast-val" required></div>
+          <div><label>Doc Link (Registry/Deed URL)</label><input type="url" id="ast-link" placeholder="Optional URL"></div>
+          <button type="submit" id="btn-add-ast" class="btn" style="margin-bottom: 12px; flex: 0 0 auto;">Add Asset</button>
+        </form>
+        <div id="list-assets"></div>
+      </div>
+
+      <!-- LOANS -->
+      <div id="tab-loans" class="tab-pane">
+        <h3 class="text-primary">Active Liabilities & Loans</h3>
+        <form class="card form-row" onsubmit="addLoan(event)" style="align-items: flex-end;">
+          <div><label>Borrower</label><select id="ln-owner"><option>Joint</option><option>Member 1</option><option>Member 2</option></select></div>
+          <div><label>Loan Type (e.g. Home)</label><input type="text" id="ln-name" required></div>
+          <div><label>Outstanding Principal (₹)</label><input type="number" id="ln-val" required></div>
+          <div><label>Monthly EMI (₹)</label><input type="number" id="ln-emi" required></div>
+          <div><label>Remaining Months</label><input type="number" id="ln-months" required></div>
+          <div><label>Doc Link (Agreement URL)</label><input type="url" id="ln-link" placeholder="Optional URL"></div>
+          <button type="submit" id="btn-add-ln" class="btn" style="margin-bottom: 12px; flex: 0 0 auto;">Add Loan</button>
+        </form>
+        <div id="list-loans"></div>
+      </div>
+
+      <!-- INSURANCE -->
+      <div id="tab-insure" class="tab-pane">
+        <h3 class="text-primary">Risk Protection (Medical & Life)</h3>
+        <div class="card">
+          <div class="form-row" style="margin-bottom: 16px;">
+            <div><label>Family Floater Health Cover (₹)</label><input type="number" id="ins-health-fam" value="0"></div>
+            <div><label>Provider Type</label><select id="ins-health-type"><option>Self-Bought</option><option>Corporate/Employer</option></select></div>
+          </div>
+          <div class="form-row" style="margin-bottom: 16px;">
+            <div><label>Member 1: Term Life Cover (₹)</label><input type="number" id="ins-term-m1" value="0"></div>
+            <div><label>Provider Type</label><select id="ins-term-m1-type"><option>Self-Bought</option><option>Corporate/Employer</option></select></div>
+          </div>
+          <div class="form-row">
+            <div><label>Member 2: Term Life Cover (₹)</label><input type="number" id="ins-term-m2" value="0"></div>
+            <div><label>Provider Type</label><select id="ins-term-m2-type"><option>Self-Bought</option><option>Corporate/Employer</option></select></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS & MATH -->
+      <div id="tab-settings" class="tab-pane">
+        <h3 class="text-primary">App Settings & Math Assumptions</h3>
+        <div class="card grid-2">
+          <div>
+            <label>UI Theme</label>
+            <select id="set-theme" onchange="previewTheme()">
+              <option value="midnight">Midnight Blue (Default)</option>
+              <option value="slate">Slate Grey</option>
+              <option value="forest">Forest Green</option>
+              <option value="coffee">Coffee Brown</option>
+              <option value="obsidian">High-Contrast Obsidian</option>
+            </select>
+          </div>
+          <div><label>Member 1 Target Retirement Age</label><input type="number" id="set-ret-m1" value="55"></div>
+          <div><label>Member 2 Target Retirement Age</label><input type="number" id="set-ret-m2" value="55"></div>
+          <div><label>General Lifestyle Inflation (%)</label><input type="number" step="0.1" id="set-inf-gen" value="7"></div>
+          <div><label>Education Inflation (%)</label><input type="number" step="0.1" id="set-inf-edu" value="10"></div>
+          <div><label>Expected Equity Return (CAGR %)</label><input type="number" step="0.1" id="set-cagr-eq" value="12"></div>
+        </div>
+        
+        <div class="grid-2">
+            <div class="card" style="margin-top: 20px; border-color: var(--primary);">
+            <h4 style="color: var(--primary); margin-bottom: 8px;">Gemini API Key</h4>
+            <p class="text-muted" style="font-size: 12px; margin-bottom: 12px;">Get a free API key from <b>aistudio.google.com</b> to power the AI Architect.</p>
+            <input type="password" id="set-gemini-key" placeholder="AIzaSy...">
+            </div>
+
+            <div class="card" style="margin-top: 20px; border-color: var(--success); text-align: center; display: flex; flex-direction: column; justify-content: center;">
+            <h4 style="color: var(--success); margin-bottom: 8px;">Data Portability</h4>
+            <p class="text-muted" style="font-size: 12px; margin-bottom: 12px;">Download a neatly formatted CSV of your entire portfolio.</p>
+            <button class="btn btn-success" onclick="exportToCSV()" style="width: 100%;">📥 Export as CSV</button>
+            </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- SESSION TIMEOUT MODAL -->
+<div id="session-modal" class="hidden">
+  <div class="card" style="text-align: center; max-width: 300px;">
+    <h2 class="text-warning">Session Expiring</h2>
+    <p class="text-muted" style="margin-bottom: 20px;">For security, you will be logged out in <strong id="logout-timer-count" class="text-primary" style="font-size: 20px;">60</strong> seconds.</p>
+    <button class="btn" style="width: 100%;" onclick="extendSession()">Keep Me Logged In</button>
+  </div>
+</div>
+
+<div id="msg-box"></div>
+
+<script>
+  const CLIENT_ID = '300359678284-48c7g0vil15nbgek4u5qvhfd6j27vcr6.apps.googleusercontent.com'; 
+  const ALLOWED_EMAIL = 'ajaycool16@gmail.com';
+  const FILE_NAME = 'family_wealth_planner_db_v4.json'; 
+  const SESSION_KEY = 'huf_planner_session_v4';
+  
+  let tokenClient, accessToken = null, driveFileId = null;
+  let chartInstance = null, historyChartInstance = null;
+  let sessionTimeout, countdownInterval;
+  let currentEdit = { list: null, id: null };
+  let chatHistory = [];
+
+  // Theme Definitions
+  const uiThemes = {
+      midnight: { bg: '#0f172a', surface: '#1e293b', surfaceHover: '#334155', border: '#334155', borderLight: '#475569', text: '#f8fafc', textMuted: '#94a3b8', primary: '#3b82f6', primaryHover: '#2563eb' },
+      slate: { bg: '#0f1115', surface: '#1e2128', surfaceHover: '#2a2e37', border: '#2a2e37', borderLight: '#3f4451', text: '#f8fafc', textMuted: '#a0aabf', primary: '#6366f1', primaryHover: '#4f46e5' },
+      forest: { bg: '#022c22', surface: '#064e3b', surfaceHover: '#065f46', border: '#065f46', borderLight: '#047857', text: '#ecfdf5', textMuted: '#a7f3d0', primary: '#10b981', primaryHover: '#059669' },
+      coffee: { bg: '#291c14', surface: '#432c1f', surfaceHover: '#5c3d2e', border: '#5c3d2e', borderLight: '#78503c', text: '#fef3c7', textMuted: '#fde68a', primary: '#d97706', primaryHover: '#b45309' },
+      obsidian: { bg: '#000000', surface: '#111111', surfaceHover: '#222222', border: '#333333', borderLight: '#444444', text: '#ffffff', textMuted: '#aaaaaa', primary: '#2563eb', primaryHover: '#1d4ed8' }
+  };
+
+  const defaultData = {
+    members: { m1: {name: 'Member 1', age: 35, gender: 'Male'}, m2: {name: 'Member 2', age: 33, gender: 'Female'} },
+    kids: [], invest: [], assets: [], loans: [], history: [],
+    income: { m1: 0, m2: 0, living: 50000, rent: 0 },
+    liquid: { m1: {bank: 0, emer: 0}, m2: {bank: 0, emer: 0} },
+    retire: { m1: {epfVal: 0, epfSip: 0, npsVal: 0, npsSip: 0}, m2: {epfVal: 0, epfSip: 0, npsVal: 0, npsSip: 0} },
+    insure: { familyHealth: 0, healthType: 'Self-Bought', m1: {term: 0, type: 'Self-Bought'}, m2: {term: 0, type: 'Self-Bought'} },
+    settings: { retAgeM1: 55, retAgeM2: 55, infGen: 7, infEdu: 10, cagrEq: 12, geminiKey: '', theme: 'midnight', fireIncomeOverride: '' }
+  };
+  let appData = JSON.parse(JSON.stringify(defaultData));
+
+  window.onload = function() {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.email',
+      callback: (res) => { 
+        if (res && res.access_token) { 
+          accessToken = res.access_token; 
+          localStorage.setItem(SESSION_KEY, JSON.stringify({ token: accessToken, time: Date.now() }));
+          verifyDrive(); 
+        } 
+      }
+    });
+
+    const savedSession = JSON.parse(localStorage.getItem(SESSION_KEY));
+    if (savedSession && (Date.now() - savedSession.time < 10 * 60 * 1000)) {
+      accessToken = savedSession.token;
+      document.getElementById('auth-status').innerHTML = '<span class="loader"></span> Restoring session...';
+      verifyDrive();
+    }
+  };
+
+  function applyTheme(themeName) {
+      const t = uiThemes[themeName] || uiThemes.midnight;
+      const root = document.documentElement;
+      root.style.setProperty('--bg', t.bg);
+      root.style.setProperty('--surface', t.surface);
+      root.style.setProperty('--surface-hover', t.surfaceHover);
+      root.style.setProperty('--border', t.border);
+      root.style.setProperty('--border-light', t.borderLight);
+      root.style.setProperty('--text', t.text);
+      root.style.setProperty('--text-muted', t.textMuted);
+      root.style.setProperty('--primary', t.primary);
+      root.style.setProperty('--primary-hover', t.primaryHover);
+      document.getElementById('meta-theme-color').setAttribute('content', t.bg);
+  }
+
+  function previewTheme() {
+      const val = document.getElementById('set-theme').value;
+      applyTheme(val);
+  }
+
+  function authenticate() {
+    document.getElementById('auth-status').innerHTML = '<span class="loader"></span> Authenticating...';
+    tokenClient.requestAccessToken();
+  }
+
+  function startSessionTimer() {
+    clearTimeout(sessionTimeout);
+    clearInterval(countdownInterval);
+    sessionTimeout = setTimeout(showLogoutWarning, 9 * 60 * 1000); 
+  }
+
+  function showLogoutWarning() {
+    document.getElementById('session-modal').classList.remove('hidden');
+    let timeLeft = 60;
+    document.getElementById('logout-timer-count').innerText = timeLeft;
+    countdownInterval = setInterval(() => {
+      timeLeft--;
+      document.getElementById('logout-timer-count').innerText = timeLeft;
+      if (timeLeft <= 0) forceLogout();
+    }, 1000);
+  }
+
+  function extendSession() {
+    document.getElementById('session-modal').classList.add('hidden');
+    const session = JSON.parse(localStorage.getItem(SESSION_KEY));
+    if(session) { session.time = Date.now(); localStorage.setItem(SESSION_KEY, JSON.stringify(session)); }
+    startSessionTimer();
+  }
+
+  function forceLogout() { localStorage.removeItem(SESSION_KEY); location.reload(); }
+
+  function showMsg(text, isError=false) {
+    const box = document.getElementById('msg-box');
+    box.innerText = text;
+    box.style.borderLeft = isError ? '4px solid var(--danger)' : '4px solid var(--success)';
+    box.style.display = 'block';
+    setTimeout(() => box.style.display = 'none', 3000);
+  }
+
+  async function verifyDrive() {
+    try {
+      const uRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', { headers: { Authorization: `Bearer ${accessToken}` } });
+      const user = await uRes.json();
+      if (!uRes.ok || user.email !== ALLOWED_EMAIL) { forceLogout(); return; }
+
+      const sRes = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name="${FILE_NAME}"`, { headers: { Authorization: `Bearer ${accessToken}` } });
+      const search = await sRes.json();
+      
+      if (search.files && search.files.length > 0) {
+        driveFileId = search.files[0].id;
+        const fRes = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, { headers: { Authorization: `Bearer ${accessToken}` } });
+        const loadedData = await fRes.json();
+        
+        appData = { ...defaultData, ...loadedData, history: loadedData.history || [] };
+        
+        // Auto-Migration Map
+        appData.invest = (appData.invest || []).map(i => ({
+            ...i,
+            purchaseVal: i.purchaseVal || i.val,
+            purchaseDate: i.purchaseDate || new Date().toISOString().split('T')[0],
+            freq: i.freq || 'Monthly',
+            link: i.link || ''
+        }));
+        
+        if(!appData.insure.healthType) appData.insure.healthType = 'Self-Bought';
+        if(!appData.insure.m1.type) appData.insure.m1.type = 'Self-Bought';
+        if(!appData.insure.m2.type) appData.insure.m2.type = 'Self-Bought';
+        if(!appData.settings.theme) appData.settings.theme = 'midnight';
+
+      } else {
+        await pushToDrive(); // Create new
+      }
+      
+      initApp();
+      startSessionTimer(); 
+    } catch (e) {
+      document.getElementById('auth-status').innerText = 'Network error during Google Sync.';
+      console.error(e);
+    }
+  }
+
+  async function pushToDrive() {
+    if (!accessToken) return;
+    try {
+      if (driveFileId) {
+        const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(appData)
+        });
+        if (!res.ok) throw new Error("Failed to PATCH file.");
+      } else {
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify({ name: FILE_NAME, parents: ['appDataFolder'] })], { type: 'application/json' }));
+        form.append('file', new Blob([JSON.stringify(appData)], { type: 'application/json' }));
+        const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', { 
+          method: 'POST', headers: { Authorization: `Bearer ${accessToken}` }, body: form 
+        });
+        const data = await res.json();
+        if (data.id) driveFileId = data.id;
+      }
+
+      const btn = document.getElementById('btn-save-sync');
+      if (btn) {
+        btn.innerHTML = '✅ Synced Securely!';
+        btn.style.backgroundColor = 'var(--success)';
+        setTimeout(() => { btn.innerHTML = '💾 Save & Sync'; btn.style.backgroundColor = 'var(--primary)'; }, 2000);
+      }
+    } catch (e) { console.error("Sync Error:", e); showMsg("Failed to sync to Google Drive.", true); }
+  }
+
+  function initApp() {
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app-screen').classList.remove('hidden');
+    applyTheme(appData.settings.theme);
+    syncUIToData();
+    updateDashboard();
+    updateComplianceCalendar();
+    runDrawdown(); // init drawdown box
+  }
+
+  function openVault() { document.getElementById('data-vault').classList.remove('hidden'); }
+  function closeVault() { document.getElementById('data-vault').classList.add('hidden'); }
+  function switchTab(id) {
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.vault-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
+  function formatMoney(num) { return '₹' + Math.round(num).toLocaleString('en-IN'); }
+
+  // Returns monthly equivalent for charting and Monte Carlo
+  function getMonthlyEquivalent(amount, freq) {
+      if(freq === 'Quarterly') return amount / 3;
+      if(freq === 'Half-Yearly') return amount / 6;
+      if(freq === 'Yearly') return amount / 12;
+      if(freq === 'Lump Sum') return 0; // Not a recurring SIP
+      return amount; // Monthly
+  }
+
+  function setupEditMode(listName, id) {
+      currentEdit = { list: listName, id: id };
+      const item = appData[listName].find(x => x.id === id);
+      
+      if(listName === 'kids') {
+          document.getElementById('k-name').value = item.name;
+          document.getElementById('k-age').value = item.age;
+          document.getElementById('k-fee').value = item.fee;
+          document.getElementById('btn-add-kid').innerText = 'Update Child';
+      } else if (listName === 'invest') {
+          document.getElementById('inv-owner').value = item.owner;
+          document.getElementById('inv-type').value = item.type;
+          document.getElementById('inv-name').value = item.name;
+          document.getElementById('inv-pdate').value = item.purchaseDate;
+          document.getElementById('inv-pval').value = item.purchaseVal;
+          document.getElementById('inv-val').value = item.val;
+          document.getElementById('inv-freq').value = item.freq;
+          document.getElementById('inv-sip').value = item.sip;
+          document.getElementById('inv-link').value = item.link || '';
+          document.getElementById('btn-add-inv').innerText = 'Update Investment';
+      } else if (listName === 'assets') {
+          document.getElementById('ast-owner').value = item.owner;
+          document.getElementById('ast-type').value = item.type;
+          document.getElementById('ast-use').value = item.use;
+          document.getElementById('ast-name').value = item.name;
+          document.getElementById('ast-val').value = item.val;
+          document.getElementById('ast-link').value = item.link || '';
+          document.getElementById('btn-add-ast').innerText = 'Update Asset';
+      } else if (listName === 'loans') {
+          document.getElementById('ln-owner').value = item.owner;
+          document.getElementById('ln-name').value = item.name;
+          document.getElementById('ln-val').value = item.val;
+          document.getElementById('ln-emi').value = item.emi;
+          document.getElementById('ln-months').value = item.months;
+          document.getElementById('ln-link').value = item.link || '';
+          document.getElementById('btn-add-ln').innerText = 'Update Loan';
+      }
+  }
+
+  function resetEditMode(listName, btnId, originalText) {
+      currentEdit = { list: null, id: null };
+      document.getElementById(btnId).innerText = originalText;
+  }
+
+  function addKid(e) { 
+      e.preventDefault(); 
+      const data = { id: currentEdit.id || Date.now(), name: document.getElementById('k-name').value, age: parseInt(document.getElementById('k-age').value), fee: parseInt(document.getElementById('k-fee').value) };
+      if(currentEdit.list === 'kids') {
+          const idx = appData.kids.findIndex(x => x.id === currentEdit.id);
+          appData.kids[idx] = data;
+          resetEditMode('kids', 'btn-add-kid', 'Add Child');
+      } else { appData.kids.push(data); }
+      e.target.reset(); renderLists(); 
+  }
+  
+  function addInvest(e) { 
+      e.preventDefault(); 
+      const data = { 
+          id: currentEdit.id || Date.now(), 
+          owner: document.getElementById('inv-owner').value, 
+          type: document.getElementById('inv-type').value, 
+          name: document.getElementById('inv-name').value, 
+          purchaseDate: document.getElementById('inv-pdate').value,
+          purchaseVal: parseInt(document.getElementById('inv-pval').value),
+          val: parseInt(document.getElementById('inv-val').value),
+          freq: document.getElementById('inv-freq').value,
+          sip: parseInt(document.getElementById('inv-sip').value),
+          link: document.getElementById('inv-link').value 
+      };
+      if(currentEdit.list === 'invest') {
+          const idx = appData.invest.findIndex(x => x.id === currentEdit.id);
+          appData.invest[idx] = data;
+          resetEditMode('invest', 'btn-add-inv', 'Add Investment');
+      } else { appData.invest.push(data); }
+      e.target.reset(); renderLists(); 
+  }
+  
+  function addAsset(e) { 
+      e.preventDefault(); 
+      const data = { id: currentEdit.id || Date.now(), owner: document.getElementById('ast-owner').value, type: document.getElementById('ast-type').value, use: document.getElementById('ast-use').value, name: document.getElementById('ast-name').value, val: parseInt(document.getElementById('ast-val').value), link: document.getElementById('ast-link').value };
+      if(currentEdit.list === 'assets') {
+          const idx = appData.assets.findIndex(x => x.id === currentEdit.id);
+          appData.assets[idx] = data;
+          resetEditMode('assets', 'btn-add-ast', 'Add Asset');
+      } else { appData.assets.push(data); }
+      e.target.reset(); renderLists(); 
+  }
+  
+  function addLoan(e) { 
+      e.preventDefault(); 
+      const data = { id: currentEdit.id || Date.now(), owner: document.getElementById('ln-owner').value, name: document.getElementById('ln-name').value, val: parseInt(document.getElementById('ln-val').value), emi: parseInt(document.getElementById('ln-emi').value), months: parseInt(document.getElementById('ln-months').value), link: document.getElementById('ln-link').value };
+      if(currentEdit.list === 'loans') {
+          const idx = appData.loans.findIndex(x => x.id === currentEdit.id);
+          appData.loans[idx] = data;
+          resetEditMode('loans', 'btn-add-ln', 'Add Loan');
+      } else { appData.loans.push(data); }
+      e.target.reset(); renderLists(); 
+  }
+  
+  function delItem(arrName, id) { 
+      appData[arrName] = appData[arrName].filter(x => x.id !== id); 
+      if(currentEdit.id === id) resetEditMode(arrName, `btn-add-${arrName === 'invest' ? 'inv' : arrName === 'assets' ? 'ast' : arrName === 'loans' ? 'ln' : 'kid'}`, `Add ${arrName.slice(0,-1)}`);
+      renderLists(); 
+  }
+
+  function renderLists() {
+    document.getElementById('list-kids').innerHTML = appData.kids.map(x => `<div class="list-item"><div class="list-item-details"><h4>${x.name} (Age ${x.age})</h4><p>School Fee: ${formatMoney(x.fee)}/mo</p></div><div style="display:flex; gap:8px;"><button class="btn btn-outline" style="padding:6px 10px; font-size:12px;" onclick="setupEditMode('kids', ${x.id})">Edit</button><button class="btn btn-danger" style="padding:6px 10px; font-size:12px;" onclick="delItem('kids', ${x.id})">Delete</button></div></div>`).join('');
+    
+    document.getElementById('list-invest').innerHTML = appData.invest.map(x => {
+        let pnl = x.val - x.purchaseVal;
+        let pnlColor = pnl >= 0 ? 'var(--success)' : 'var(--warning)';
+        let docLink = x.link ? `<a href="${x.link}" target="_blank" class="doc-link">🔗 Doc</a>` : '';
+        return `<div class="list-item"><div class="list-item-details"><h4>${x.name} <span class="badge-owner">${x.owner}</span> ${docLink}</h4>
+        <p>${x.type} • Contrib: ${formatMoney(x.sip)} (${x.freq}) <br> Invested: ${formatMoney(x.purchaseVal)} | Current: ${formatMoney(x.val)} <span style="color:${pnlColor}">(${pnl >= 0 ? '+':''}${formatMoney(pnl)})</span></p></div>
+        <div style="display:flex; gap:8px;"><button class="btn btn-outline" style="padding:6px 10px; font-size:12px;" onclick="setupEditMode('invest', ${x.id})">Edit</button><button class="btn btn-danger" style="padding:6px 10px; font-size:12px;" onclick="delItem('invest', ${x.id})">Delete</button></div></div>`;
+    }).join('');
+
+    document.getElementById('list-assets').innerHTML = appData.assets.map(x => {
+        let docLink = x.link ? `<a href="${x.link}" target="_blank" class="doc-link">🔗 Doc</a>` : '';
+        return `<div class="list-item"><div class="list-item-details"><h4>${x.name} <span class="badge-owner">${x.owner}</span> ${docLink}</h4><p>${x.type} • Intent: ${x.use} | Value: ${formatMoney(x.val)}</p></div><div style="display:flex; gap:8px;"><button class="btn btn-outline" style="padding:6px 10px; font-size:12px;" onclick="setupEditMode('assets', ${x.id})">Edit</button><button class="btn btn-danger" style="padding:6px 10px; font-size:12px;" onclick="delItem('assets', ${x.id})">Delete</button></div></div>`
+    }).join('');
+
+    document.getElementById('list-loans').innerHTML = appData.loans.map(x => {
+        let docLink = x.link ? `<a href="${x.link}" target="_blank" class="doc-link">🔗 Doc</a>` : '';
+        return `<div class="list-item"><div class="list-item-details"><h4>${x.name} <span class="badge-owner" style="color:var(--danger); border-color:var(--danger);">${x.owner}</span> ${docLink}</h4><p>O/S: ${formatMoney(x.val)} | EMI: ${formatMoney(x.emi)}/mo (${x.months}m left)</p></div><div style="display:flex; gap:8px;"><button class="btn btn-outline" style="padding:6px 10px; font-size:12px;" onclick="setupEditMode('loans', ${x.id})">Edit</button><button class="btn btn-danger" style="padding:6px 10px; font-size:12px;" onclick="delItem('loans', ${x.id})">Delete</button></div></div>`
+    }).join('');
+  }
+
+  function syncDataFromUI() {
+    appData.members.m1 = { name: document.getElementById('m1-name').value, age: parseInt(document.getElementById('m1-age').value)||0, gender: document.getElementById('m1-gender').value };
+    appData.members.m2 = { name: document.getElementById('m2-name').value, age: parseInt(document.getElementById('m2-age').value)||0, gender: document.getElementById('m2-gender').value };
+    appData.income = { m1: parseInt(document.getElementById('inc-m1').value)||0, m2: parseInt(document.getElementById('inc-m2').value)||0, living: parseInt(document.getElementById('exp-living').value)||0, rent: parseInt(document.getElementById('exp-rent').value)||0 };
+    appData.liquid.m1 = { bank: parseInt(document.getElementById('liq-bank-m1').value)||0, emer: parseInt(document.getElementById('liq-emer-m1').value)||0 };
+    appData.liquid.m2 = { bank: parseInt(document.getElementById('liq-bank-m2').value)||0, emer: parseInt(document.getElementById('liq-emer-m2').value)||0 };
+    appData.retire.m1 = { epfVal: parseInt(document.getElementById('ret-epf-val-m1').value)||0, epfSip: parseInt(document.getElementById('ret-epf-sip-m1').value)||0, npsVal: parseInt(document.getElementById('ret-nps-val-m1').value)||0, npsSip: parseInt(document.getElementById('ret-nps-sip-m1').value)||0 };
+    appData.retire.m2 = { epfVal: parseInt(document.getElementById('ret-epf-val-m2').value)||0, epfSip: parseInt(document.getElementById('ret-epf-sip-m2').value)||0, npsVal: parseInt(document.getElementById('ret-nps-val-m2').value)||0, npsSip: parseInt(document.getElementById('ret-nps-sip-m2').value)||0 };
+    appData.insure = { 
+        familyHealth: parseInt(document.getElementById('ins-health-fam').value)||0, healthType: document.getElementById('ins-health-type').value,
+        m1: {term: parseInt(document.getElementById('ins-term-m1').value)||0, type: document.getElementById('ins-term-m1-type').value}, 
+        m2: {term: parseInt(document.getElementById('ins-term-m2').value)||0, type: document.getElementById('ins-term-m2-type').value} 
+    };
+    appData.settings = { 
+        retAgeM1: parseInt(document.getElementById('set-ret-m1').value)||55, 
+        retAgeM2: parseInt(document.getElementById('set-ret-m2').value)||55, 
+        infGen: parseFloat(document.getElementById('set-inf-gen').value)||7, 
+        infEdu: parseFloat(document.getElementById('set-inf-edu').value)||10, 
+        cagrEq: parseFloat(document.getElementById('set-cagr-eq').value)||12, 
+        geminiKey: document.getElementById('set-gemini-key').value,
+        theme: document.getElementById('set-theme').value,
+        fireIncomeOverride: document.getElementById('dash-fire-override').value
+    };
+  }
+
+  function syncUIToData() {
+    document.getElementById('m1-name').value = appData.members.m1.name; document.getElementById('m1-age').value = appData.members.m1.age; document.getElementById('m1-gender').value = appData.members.m1.gender || 'Male';
+    document.getElementById('m2-name').value = appData.members.m2.name; document.getElementById('m2-age').value = appData.members.m2.age; document.getElementById('m2-gender').value = appData.members.m2.gender || 'Female';
+    document.getElementById('inc-m1').value = appData.income.m1; document.getElementById('inc-m2').value = appData.income.m2; document.getElementById('exp-living').value = appData.income.living; document.getElementById('exp-rent').value = appData.income.rent;
+    document.getElementById('liq-bank-m1').value = appData.liquid.m1.bank; document.getElementById('liq-emer-m1').value = appData.liquid.m1.emer;
+    document.getElementById('liq-bank-m2').value = appData.liquid.m2.bank; document.getElementById('liq-emer-m2').value = appData.liquid.m2.emer;
+    
+    document.getElementById('ret-epf-val-m1').value = appData.retire.m1.epfVal; document.getElementById('ret-epf-sip-m1').value = appData.retire.m1.epfSip; document.getElementById('ret-nps-val-m1').value = appData.retire.m1.npsVal; document.getElementById('ret-nps-sip-m1').value = appData.retire.m1.npsSip;
+    document.getElementById('ret-epf-val-m2').value = appData.retire.m2.epfVal; document.getElementById('ret-epf-sip-m2').value = appData.retire.m2.epfSip; document.getElementById('ret-nps-val-m2').value = appData.retire.m2.npsVal; document.getElementById('ret-nps-sip-m2').value = appData.retire.m2.npsSip;
+    
+    document.getElementById('ins-health-fam').value = appData.insure.familyHealth; document.getElementById('ins-health-type').value = appData.insure.healthType || 'Self-Bought';
+    document.getElementById('ins-term-m1').value = appData.insure.m1.term; document.getElementById('ins-term-m1-type').value = appData.insure.m1.type || 'Self-Bought';
+    document.getElementById('ins-term-m2').value = appData.insure.m2.term; document.getElementById('ins-term-m2-type').value = appData.insure.m2.type || 'Self-Bought';
+    
+    document.getElementById('set-ret-m1').value = appData.settings.retAgeM1; document.getElementById('set-ret-m2').value = appData.settings.retAgeM2;
+    document.getElementById('set-inf-gen').value = appData.settings.infGen; document.getElementById('set-inf-edu').value = appData.settings.infEdu; document.getElementById('set-cagr-eq').value = appData.settings.cagrEq; 
+    document.getElementById('set-gemini-key').value = appData.settings.geminiKey; document.getElementById('set-theme').value = appData.settings.theme;
+    
+    document.getElementById('dash-fire-override').value = appData.settings.fireIncomeOverride || '';
+    
+    renderLists();
+  }
+
+  async function saveData() { 
+      syncDataFromUI(); 
+      recordHistorySnapshot(); // Take snapshot when saving
+      await pushToDrive(); 
+      updateDashboard(); 
+  }
+
+  // Feature 6: CSV Export
+  function exportToCSV() {
+      let csv = "Category,Type,Owner,Name,Value (INR),Monthly Contrib (INR)\n";
+      appData.invest.forEach(i => csv += `Market Invest,${i.type},${i.owner},${i.name},${i.val},${getMonthlyEquivalent(i.sip, i.freq)}\n`);
+      appData.assets.forEach(a => csv += `Physical Asset,${a.type},${a.owner},${a.name},${a.val},0\n`);
+      appData.loans.forEach(l => csv += `Liability/Loan,Loan,${l.owner},${l.name},${l.val},${l.emi}\n`);
+      
+      csv += `\nRetirement,EPF,Member 1,EPF Balance,${appData.retire.m1.epfVal},${appData.retire.m1.epfSip}\n`;
+      csv += `Retirement,NPS,Member 1,NPS Balance,${appData.retire.m1.npsVal},${appData.retire.m1.npsSip}\n`;
+      csv += `Retirement,EPF,Member 2,EPF Balance,${appData.retire.m2.epfVal},${appData.retire.m2.epfSip}\n`;
+      csv += `Retirement,NPS,Member 2,NPS Balance,${appData.retire.m2.npsVal},${appData.retire.m2.npsSip}\n`;
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('hidden', '');
+      a.setAttribute('href', url);
+      a.setAttribute('download', 'financial_war_room_export.csv');
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+  }
+
+  // Feature 5: Indian Compliance Calendar
+  function updateComplianceCalendar() {
+      const month = new Date().getMonth(); // 0-indexed (0=Jan, 11=Dec)
+      let msg = "";
+      if(month >= 0 && month <= 2) { // Jan - Mar
+          msg = "🚨 Tax Season (Q4): Finalize 80C/80D investments. Last chance to book tax-loss harvesting before March 31st.";
+      } else if (month === 3) { // Apr
+          msg = "🌱 New Financial Year: Deposit PPF/SSY lumpsums before April 5th to maximize annual interest.";
+      } else if (month >= 5 && month <= 6) { // Jun - Jul
+          msg = "📝 ITR Filing: Income Tax Return deadline is approaching (typically July 31st). Consolidate your Form 16s and AIS.";
+      } else if (month === 11) { // Dec
+          msg = "📉 Year-End Review: Plan your capital gains mapping. Identify losers to offset booked gains next quarter.";
+      } else {
+          msg = "✅ Mid-Year: No major tax deadlines. Stay consistent with your SIPs and track your emergency fund.";
+      }
+      document.getElementById('compliance-alert').innerText = msg;
+  }
+
+  function checkTaxLossHarvesting() {
+      let out = '';
+      let today = new Date();
+      let hasLosses = false;
+
+      appData.invest.forEach(inv => {
+          if(inv.val < inv.purchaseVal && (inv.type.includes('Equity') || inv.type.includes('Stock') || inv.type.includes('Mutual'))) {
+              hasLosses = true;
+              let loss = inv.purchaseVal - inv.val;
+              let pDate = new Date(inv.purchaseDate);
+              let daysHeld = (today - pDate) / (1000 * 60 * 60 * 24);
+              let type = daysHeld <= 365 ? 'STCG (20%)' : 'LTCG (12.5%)';
+              
+              out += `<div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:6px; margin-bottom:6px;">
+                 <strong>${inv.name}</strong><br>
+                 Unrealized Loss: <span class="text-warning">${formatMoney(loss)}</span> <br>
+                 <span style="font-size:11px; color:var(--text-muted);">Offsets: ${type} • Bought: ${inv.purchaseDate}</span>
+              </div>`;
+          }
+      });
+      if(!hasLosses) out = '<div class="text-success">No tax-loss harvesting opportunities detected right now.</div>';
+      document.getElementById('tax-harvest-status').innerHTML = out;
+  }
+
+  // Feature 4: Debt Avalanche Visualizer
+  function updateDebtVisualizer() {
+      let extra = parseFloat(document.getElementById('debt-extra').value) || 0;
+      document.getElementById('debt-extra-val').innerText = extra.toLocaleString('en-IN');
+      
+      let totPrin = appData.loans.reduce((s,l) => s + l.val, 0);
+      let baseEmi = appData.loans.reduce((s,l) => s + l.emi, 0);
+      let rate = 0.09 / 12; // Assume 9% avg home loan rate
+      
+      let resBox = document.getElementById('debt-result');
+      if(totPrin <= 0 || baseEmi <= 0) {
+          resBox.innerHTML = "You have no active loans! You are debt-free.";
+          resBox.style.background = 'rgba(16, 185, 129, 0.1)'; resBox.style.color = 'var(--success)';
+          return;
+      }
+      
+      // Calculate Base Scenario
+      let baseMonths = Math.log(baseEmi / (baseEmi - totPrin * rate)) / Math.log(1 + rate);
+      let baseTotalPaid = baseMonths * baseEmi;
+      let baseInterest = baseTotalPaid - totPrin;
+      
+      if(extra === 0) {
+          resBox.innerHTML = `Base Scenario: You will pay <b>${formatMoney(baseInterest)}</b> in total interest over ~${Math.ceil(baseMonths/12)} years.`;
+          resBox.style.background = 'rgba(239, 68, 68, 0.1)'; resBox.style.color = 'var(--danger)';
+          return;
+      }
+      
+      // Calculate Accelerated Scenario
+      let newEmi = baseEmi + extra;
+      let newMonths = Math.log(newEmi / (newEmi - totPrin * rate)) / Math.log(1 + rate);
+      let newTotalPaid = newMonths * newEmi;
+      let newInterest = newTotalPaid - totPrin;
+      
+      let intSaved = baseInterest - newInterest;
+      let monthsSaved = baseMonths - newMonths;
+      
+      resBox.innerHTML = `By adding ₹${extra}/mo, you will save <b class="text-success">${formatMoney(intSaved)}</b> in interest and be debt-free <b class="text-success">${Math.floor(monthsSaved/12)} years and ${Math.ceil(monthsSaved%12)} months</b> earlier!`;
+      resBox.style.background = 'rgba(16, 185, 129, 0.1)'; resBox.style.color = 'var(--success)';
+  }
+
+  // Feature 2: Safe Withdrawal Drawdown Sandbox
+  function runDrawdown() {
+      let wd = parseFloat(document.getElementById('dd-withdraw').value) || 0;
+      let inf = (parseFloat(document.getElementById('dd-inf').value) || 0) / 100;
+      let grw = (parseFloat(document.getElementById('dd-growth').value) || 0) / 100;
+      
+      let totInvest = appData.invest.reduce((s, x) => s + x.val, 0);
+      let corpus = appData.liquid.m1.bank + appData.liquid.m1.emer + appData.liquid.m2.bank + appData.liquid.m2.emer + totInvest + appData.retire.m1.epfVal + appData.retire.m1.npsVal + appData.retire.m2.epfVal + appData.retire.m2.npsVal;
+      
+      let years = 0;
+      let currentCorpus = corpus;
+      let yearlyWd = wd * 12;
+      
+      if(corpus <= 0 || wd <= 0) { document.getElementById('dd-result').innerText = '0 Years'; return; }
+      
+      // Prevent infinite loop if growth beats inflation + withdrawal
+      if (currentCorpus * grw >= yearlyWd && grw > inf) {
+          document.getElementById('dd-result').innerText = 'Forever (Corpus Grows)';
+          return;
+      }
+      
+      while(currentCorpus > 0 && years < 100) {
+          currentCorpus = currentCorpus - yearlyWd; // withdraw
+          if(currentCorpus <= 0) break;
+          currentCorpus = currentCorpus * (1 + grw); // grow remaining
+          yearlyWd = yearlyWd * (1 + inf); // inflate withdrawal
+          years++;
+      }
+      
+      document.getElementById('dd-result').innerText = years >= 100 ? '99+ Years' : `${years} Years`;
+  }
+
+  function updateSimulation() {
+      let extraSip = parseFloat(document.getElementById('sim-sip').value);
+      let simCagr = parseFloat(document.getElementById('sim-cagr').value);
+      let simYrs = parseFloat(document.getElementById('sim-yrs').value);
+
+      document.getElementById('sim-sip-val').innerText = formatMoney(extraSip);
+      document.getElementById('sim-cagr-val').innerText = simCagr === 0 ? "Default" : simCagr + "%";
+      document.getElementById('sim-yrs-val').innerText = simYrs === 0 ? "Default" : simYrs;
+      
+      document.getElementById('mc-output').classList.add('hidden'); // hide MC result on new slider input
+      updateDashboard(true); // refresh chart with new inputs
+  }
+
+  // Box-Muller transform for Monte Carlo Normal Distribution
+  function gaussianRandom(mean, stdev) {
+    let u = 1 - Math.random(); 
+    let v = Math.random();
+    let z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    return z * stdev + mean;
+  }
+
+  function runMonteCarlo() {
+      const iterations = 1000;
+      let successCount = 0;
+      
+      let extraSip = parseFloat(document.getElementById('sim-sip').value);
+      let normalizedMarketSip = appData.invest.reduce((s,x)=> s + getMonthlyEquivalent(x.sip, x.freq), 0);
+      let totalSIP = normalizedMarketSip + appData.retire.m1.epfSip + appData.retire.m1.npsSip + appData.retire.m2.epfSip + appData.retire.m2.npsSip + extraSip;
+      
+      let totInvest = appData.invest.reduce((s, x) => s + x.val, 0);
+      let startVal = appData.liquid.m1.bank + appData.liquid.m1.emer + appData.liquid.m2.bank + appData.liquid.m2.emer + totInvest + appData.retire.m1.epfVal + appData.retire.m1.npsVal + appData.retire.m2.epfVal + appData.retire.m2.npsVal;
+      
+      let simYrs = parseFloat(document.getElementById('sim-yrs').value);
+      let years = simYrs > 0 ? simYrs : Math.max(1, Math.max(appData.settings.retAgeM1 - appData.members.m1.age, appData.settings.retAgeM2 - appData.members.m2.age));
+      
+      let simCagr = parseFloat(document.getElementById('sim-cagr').value);
+      let meanReturn = (simCagr > 0 ? simCagr : appData.settings.cagrEq) / 100;
+      let volatility = 0.15; // 15% Standard Deviation proxy for Indian Equities
+
+      let overrideInput = document.getElementById('dash-fire-override').value;
+      let baseIncomeNeeded = overrideInput && !isNaN(overrideInput) ? parseFloat(overrideInput) : appData.income.living;
+      let futureExp = baseIncomeNeeded * Math.pow(1 + (appData.settings.infGen/100), years);
+      let fireTarget = (futureExp * 12) * 25;
+
+      for(let i=0; i<iterations; i++) {
+          let current = startVal;
+          for(let y=0; y<years; y++) {
+              let yearlyReturn = gaussianRandom(meanReturn, volatility);
+              current = (current + (totalSIP * 12)) * (1 + yearlyReturn);
+          }
+          if(current >= fireTarget) successCount++;
+      }
+
+      let prob = (successCount / iterations) * 100;
+      let mcOut = document.getElementById('mc-output');
+      
+      let badgeClass = prob > 85 ? 'background:var(--success); color:#fff;' : (prob > 50 ? 'background:var(--warning); color:#000;' : 'background:var(--danger); color:#fff;');
+      
+      mcOut.innerHTML = `<strong>Monte Carlo Simulation (1,000 Scenarios):</strong> <span class="mc-result" style="${badgeClass}">${prob.toFixed(1)}% Success Probability</span><br>
+      <div style="font-size:12px; color:var(--text-muted); margin-top:8px;"><b>What this means:</b> We ran 1,000 randomized stock market lifetimes using a 15% historical volatility index. In ${successCount} out of 1,000 scenarios, your current savings strategy successfully reached your FIRE target despite market crashes. A score above 80% is considered highly safe.</div>`;
+      mcOut.classList.remove('hidden');
+  }
+
+  // Feature 1: Historical Net Worth Snapshot
+  function recordHistorySnapshot() {
+      const today = new Date();
+      const monthYear = today.toLocaleString('default', { month: 'short', year: 'numeric' });
+      
+      let totInvest = appData.invest.reduce((s, x) => s + x.val, 0);
+      let totAssets = appData.assets.reduce((s, x) => s + x.val, 0);
+      let totLoans = appData.loans.reduce((s, x) => s + x.val, 0);
+      let liqTotal = appData.liquid.m1.bank + appData.liquid.m1.emer + appData.liquid.m2.bank + appData.liquid.m2.emer + totInvest + appData.retire.m1.epfVal + appData.retire.m1.npsVal + appData.retire.m2.epfVal + appData.retire.m2.npsVal;
+      let netWorth = liqTotal + totAssets - totLoans;
+
+      if(!appData.history) appData.history = [];
+      const lastEntry = appData.history[appData.history.length - 1];
+      
+      if(!lastEntry || lastEntry.date !== monthYear) {
+          appData.history.push({ date: monthYear, nw: netWorth, assets: liqTotal + totAssets, debt: totLoans });
+      } else {
+          lastEntry.nw = netWorth;
+          lastEntry.assets = liqTotal + totAssets;
+          lastEntry.debt = totLoans;
+      }
+  }
+
+  function drawHistoryChart() {
+      if(!appData.history || appData.history.length === 0) return;
+      if(historyChartInstance) historyChartInstance.destroy();
+      
+      const labels = appData.history.map(h => h.date);
+      const nwData = appData.history.map(h => h.nw);
+      const assetData = appData.history.map(h => h.assets);
+      const debtData = appData.history.map(h => h.debt);
+
+      const ctx = document.getElementById('historyChart').getContext('2d');
+      historyChartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+              labels: labels,
+              datasets: [
+                  { label: 'Net Worth', data: nwData, borderColor: '#10b981', backgroundColor: '#10b981', fill: false, tension: 0.3 },
+                  { label: 'Total Assets', data: assetData, borderColor: '#3b82f6', borderDash: [5, 5], fill: false, tension: 0.3 },
+                  { label: 'Total Debt', data: debtData, borderColor: '#ef4444', fill: false, tension: 0.3 }
+              ]
+          },
+          options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border').trim() } }, x: { grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border').trim() } } }, plugins: { legend: { labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() } } } }
+      });
+  }
+
+  function updateDashboard(isSimulation = false) {
+    if(!isSimulation) {
+        let overrideInput = document.getElementById('dash-fire-override').value;
+        appData.settings.fireIncomeOverride = overrideInput; 
+    }
+
+    let totInvest = appData.invest.reduce((s, x) => s + x.val, 0);
+    let totAssets = appData.assets.reduce((s, x) => s + x.val, 0);
+    let totLoans = appData.loans.reduce((s, x) => s + x.val, 0);
+    
+    let liqTotal = appData.liquid.m1.bank + appData.liquid.m1.emer + appData.liquid.m2.bank + appData.liquid.m2.emer + totInvest + appData.retire.m1.epfVal + appData.retire.m1.npsVal + appData.retire.m2.epfVal + appData.retire.m2.npsVal;
+    
+    if(!isSimulation) {
+        let netWorth = liqTotal + totAssets - totLoans;
+        document.getElementById('dash-nw').innerText = formatMoney(netWorth);
+        document.getElementById('dash-liquid').innerText = formatMoney(liqTotal);
+        document.getElementById('dash-debt').innerText = formatMoney(totLoans);
+
+        let monthlyBurn = appData.income.living + appData.income.rent + appData.loans.reduce((s,x)=>s+x.emi, 0) + appData.kids.reduce((s,x)=>s+x.fee, 0);
+        let reqEmer = monthlyBurn * 6;
+        document.getElementById('dash-em-req').innerText = formatMoney(reqEmer);
+        document.getElementById('em-formula').innerText = `Math: (Living ₹${appData.income.living} + Rent ₹${appData.income.rent} + EMIs ₹${appData.loans.reduce((s,x)=>s+x.emi, 0)} + Kids Fees ₹${appData.kids.reduce((s,x)=>s+x.fee, 0)}) × 6`;
+        
+        let actualEmer = appData.liquid.m1.emer + appData.liquid.m2.emer;
+        document.getElementById('dash-em-actual').innerText = formatMoney(actualEmer);
+        let emEl = document.getElementById('em-status');
+        if (actualEmer >= reqEmer) { emEl.innerHTML = '✅ Fully Funded.'; emEl.style.color = 'var(--success)'; }
+        else { emEl.innerHTML = `⚠️ Shortfall of ${formatMoney(reqEmer - actualEmer)}.`; emEl.style.color = 'var(--warning)'; }
+
+        let coverReq = (monthlyBurn * 12 * 15) + totLoans;
+        let insHtml = '';
+        if (appData.insure.familyHealth < 1000000) insHtml += `<div style="margin-bottom:6px;">⚠️ <b>Health:</b> Low (${formatMoney(appData.insure.familyHealth)} - ${appData.insure.healthType}). Recommend min ₹10L.</div>`;
+        else insHtml += `<div style="margin-bottom:6px;">✅ <b>Health:</b> Adequate (${formatMoney(appData.insure.familyHealth)} - ${appData.insure.healthType}).</div>`;
+        
+        if (appData.insure.m1.term < coverReq && appData.income.m1 > 0) insHtml += `<div style="margin-bottom:6px;">⚠️ <b>M1 Term Life:</b> Gap detected. Recommend ${formatMoney(coverReq)}. (${appData.insure.m1.type})</div>`;
+        else if (appData.income.m1 > 0) insHtml += `<div style="margin-bottom:6px;">✅ <b>M1 Term Life:</b> Sufficient (${appData.insure.m1.type}).</div>`;
+        
+        if (appData.insure.m2.term < coverReq && appData.income.m2 > 0) insHtml += `<div>⚠️ <b>M2 Term Life:</b> Gap detected. Recommend ${formatMoney(coverReq)}. (${appData.insure.m2.type})</div>`;
+        else if (appData.income.m2 > 0) insHtml += `<div>✅ <b>M2 Term Life:</b> Sufficient (${appData.insure.m2.type}).</div>`;
+        document.getElementById('ins-status').innerHTML = insHtml;
+
+        checkTaxLossHarvesting();
+        updateDebtVisualizer();
+        recordHistorySnapshot(); // Make sure current state is in history
+        drawHistoryChart(); // Render History
+    }
+
+    // Simulation overrides for the projection chart
+    let simSip = parseFloat(document.getElementById('sim-sip').value) || 0;
+    let simCagr = parseFloat(document.getElementById('sim-cagr').value);
+    let simYrs = parseFloat(document.getElementById('sim-yrs').value);
+
+    let activeCagr = (simCagr > 0) ? simCagr : appData.settings.cagrEq;
+    
+    let yearsM1 = Math.max(1, appData.settings.retAgeM1 - appData.members.m1.age);
+    let yearsM2 = Math.max(1, appData.settings.retAgeM2 - appData.members.m2.age);
+    let activeYears = (simYrs > 0) ? simYrs : Math.max(yearsM1, yearsM2); 
+
+    let overrideInput = document.getElementById('dash-fire-override').value;
+    let baseIncomeNeeded = overrideInput && !isNaN(overrideInput) ? parseFloat(overrideInput) : appData.income.living;
+    
+    let futureMonthlyExp = baseIncomeNeeded * Math.pow(1 + (appData.settings.infGen/100), activeYears);
+    let fireCorpus = (futureMonthlyExp * 12) * 25;
+    
+    if(!isSimulation) document.getElementById('dash-fire').innerText = formatMoney(fireCorpus);
+
+    drawChart(liqTotal, activeCagr, activeYears, fireCorpus, simSip);
+  }
+
+  function drawChart(startVal, cagr, years, target, extraSip = 0) {
+    if(chartInstance) chartInstance.destroy();
+    
+    let normalizedMarketSip = appData.invest.reduce((s,x)=> s + getMonthlyEquivalent(x.sip, x.freq), 0);
+    let baseSIP = normalizedMarketSip + appData.retire.m1.epfSip + appData.retire.m1.npsSip + appData.retire.m2.epfSip + appData.retire.m2.npsSip;
+    let totalSIP = baseSIP + extraSip;
+    
+    let labels = [], data = [], targetData = [];
+    let current = startVal, rate = cagr / 100;
+
+    let plotYears = Math.max(20, years);
+    for(let i=0; i<=plotYears; i++) {
+      labels.push('Year ' + i);
+      data.push(current);
+      targetData.push(target);
+      current = (current + (totalSIP * 12)) * (1 + rate);
+    }
+
+    const ctx = document.getElementById('wealthChart').getContext('2d');
+    chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'Projected Liquid Wealth', data: data, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary').trim(), backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.4 },
+          { label: 'FIRE Target Corpus', data: targetData, borderColor: '#10b981', borderDash: [5, 5], fill: false, pointRadius: 0 }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border').trim() } }, x: { grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border').trim() } } }, plugins: { legend: { labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() } } } }
+    });
+  }
+
+  // AI Architect with Chat History using CORRECTED MODEL STRING
+  async function startAIChat(topic) {
+    const key = appData.settings.geminiKey;
+    const out = document.getElementById('ai-output');
+    const interfaceBox = document.getElementById('ai-chat-interface');
+    
+    if (!key) {
+      out.innerHTML = `<span class="text-danger">⚠️ Gemini API Key missing.</span><br>Ensure you generated it at <b>aistudio.google.com</b>.<br>Paste it in Vault > "⚙️ Settings & Tools".`;
+      out.classList.remove('hidden');
+      return;
+    }
+
+    out.innerHTML = '<span class="loader"></span> Architecting highly focused strategy...';
+    out.classList.remove('hidden');
+    interfaceBox.classList.add('hidden');
+
+    let promptContext = "";
+    switch(topic) {
+        case 'liquidity':
+            promptContext = `Focus strictly on Emergency Funds, Liquid Reserves, and Monthly Burn Rate. 
+            Base Living Exp: ₹${appData.income.living}/mo, Rent: ₹${appData.income.rent}/mo, Loan EMIs: ₹${appData.loans.reduce((s,x)=>s+x.emi, 0)}/mo.
+            M1 Bank+Emer: ₹${appData.liquid.m1.bank + appData.liquid.m1.emer}. 
+            M2 Bank+Emer: ₹${appData.liquid.m2.bank + appData.liquid.m2.emer}.
+            Do they have 6-12 months of pure liquid runway? Suggest specific ultra-safe debt instruments for Indian residents to park emergency cash.`;
+            break;
+        case 'insurance':
+            promptContext = `Focus strictly on Insurance and Risk Mitigation. Consider if insurance is tied to employment (High Risk if fired) vs Self-Bought.
+            Family Floater: ₹${appData.insure.familyHealth} (${appData.insure.healthType}). 
+            M1 Term Life: ₹${appData.insure.m1.term} (${appData.insure.m1.type}). 
+            M2 Term Life: ₹${appData.insure.m2.term} (${appData.insure.m2.type}).
+            Liabilities/Loans: ₹${appData.loans.reduce((s, x) => s + x.val, 0)}.
+            Are they under-insured considering Indian medical inflation (~14%)? Give strict recommendations.`;
+            break;
+        case 'asset_allocation':
+            let invList = appData.invest.map(i => `${i.type} (₹${i.val})`).join(', ');
+            promptContext = `Focus strictly on Asset Allocation, Portfolio Diversification, and FIRE trajectory.
+            Total Liquid/Market Assets: ₹${appData.liquid.m1.bank + appData.liquid.m1.emer + appData.liquid.m2.bank + appData.liquid.m2.emer + appData.invest.reduce((s, x) => s + x.val, 0)}.
+            Investments breakdown: ${invList}.
+            Target FIRE Retirement Age: ${appData.settings.retAgeM1} & ${appData.settings.retAgeM2}.
+            Is their Equity to Debt ratio optimal for their age? Advise on rebalancing.`;
+            break;
+        case 'tax':
+            let taxData = appData.invest.map(i => `Asset: ${i.type}, Invested: ₹${i.purchaseVal}, Current: ₹${i.val}, Bought: ${i.purchaseDate}`).join(' | ');
+            promptContext = `Focus strictly on Indian Tax Optimization (STCG at 20%, LTCG at 12.5% over 1.25L limit).
+            Here is their market portfolio with purchase dates: ${taxData}.
+            Identify any tax-loss harvesting opportunities. Suggest EPF/PPF/ELSS structuring based on standard Indian taxation.`;
+            break;
+    }
+
+    const systemPrompt = `You are a SEBI-registered fee-only financial planner for an Indian family. Be brutal, objective, and format with Markdown. ${promptContext}`;
+    
+    // Reset History for new topic
+    chatHistory = [{ role: 'user', parts: [{ text: systemPrompt }] }];
+
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${key}`;
+      let response = await fetch(url, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: chatHistory })
+      });
+      let data = await response.json();
+      if(data.error) throw new Error(data.error.message);
+      
+      let text = data.candidates[0].content.parts[0].text;
+      chatHistory.push({ role: 'model', parts: [{ text: text }] });
+      
+      out.innerHTML = formatAIText(text);
+      interfaceBox.classList.remove('hidden'); // Show chat interface
+    } catch (e) {
+      out.innerHTML = `<span class="text-danger">API Error:</span> ${e.message}`;
+    }
+  }
+
+  async function sendAIChat() {
+      const inputEl = document.getElementById('ai-chat-input');
+      const text = inputEl.value.trim();
+      if(!text) return;
+      
+      const key = appData.settings.geminiKey;
+      const out = document.getElementById('ai-output');
+      
+      out.innerHTML += `<div class="chat-bubble-user"><b>You:</b> ${text}</div>`;
+      out.innerHTML += `<div id="ai-typing" style="color:var(--primary); font-size:12px;">AI is thinking...</div>`;
+      out.scrollTop = out.scrollHeight; 
+      
+      inputEl.value = '';
+      chatHistory.push({ role: 'user', parts: [{ text: text }] });
+
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${key}`;
+        let response = await fetch(url, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: chatHistory })
+        });
+        let data = await response.json();
+        if(data.error) throw new Error(data.error.message);
+        
+        let responseText = data.candidates[0].content.parts[0].text;
+        chatHistory.push({ role: 'model', parts: [{ text: responseText }] });
+        
+        document.getElementById('ai-typing').remove();
+        out.innerHTML += `<div class="chat-bubble-ai">${formatAIText(responseText)}</div>`;
+        out.scrollTop = out.scrollHeight;
+      } catch (e) {
+        document.getElementById('ai-typing').innerText = `Error: ${e.message}`;
+      }
+  }
+
+  function formatAIText(text) {
+      return text.replace(/## (.*?)\n/g, '<h3>$1</h3>')
+                 .replace(/\*\*(.*?)\*\*/g, '<strong class="text-primary">$1</strong>')
+                 .replace(/\* (.*?)\n/g, '<ul style="margin-left:20px;"><li>$1</li></ul>')
+                 .replace(/<\/ul>\n<ul style="margin-left:20px;">/g, ''); 
+  }
+</script>
+</body>
+</html>
